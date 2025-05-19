@@ -8,11 +8,17 @@ export default defineConfig({
     exclude: ['lucide-react'],
   },
   build: {
-    target: 'chrome88',
+    target: 'es2020',
     rollupOptions: {
       output: {
         format: 'es',
       },
+    },
+  },
+  esbuild: {
+    target: 'es2020',
+    supported: {
+      'top-level-await': true,
     },
   },
 });
