@@ -3,13 +3,12 @@ export type ProductCategory =
   | 'Trucks'
   | 'Rodas'
   | 'Rolamentos'
-  | 'Lixa'
+  | 'Lixas'
   | 'Parafusos'
-  | 'Porcas'
   | 'Ferramentas'
   | 'Acessórios'
-  | 'Bonés'
-  | 'Camisetas'
+  | 'Roupas'
+  | 'Tênis'
   | 'Outros';
 
 export interface Product {
@@ -69,4 +68,5 @@ export interface Expense {
   category: string;
   date: Date;
   notes?: string;
+  paymentMethod: string;
 }

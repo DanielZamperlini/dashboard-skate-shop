@@ -12,7 +12,7 @@ import {
   Edit,
   Trash2,
 } from 'lucide-react';
-import ExpenseForm from '../components/expenses/ExpenseForm';
+import ExpenseModal from '../components/expenses/ExpenseModal';
 import Button from '../components/ui/Button';
 import { Link } from 'react-router-dom';
 import { Sale, Expense } from '../types';
@@ -326,25 +326,15 @@ const Dashboard: React.FC = () => {
 
       {/* Add/Edit Expense Modal */}
       {showExpenseForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
-            <div className="p-4 border-b border-gray-200">
-              <h2 className="text-lg font-medium">
-                {editingExpense ? 'Editar Despesa' : 'Registrar Nova Despesa'}
-              </h2>
-            </div>
-            <div className="p-4">
-              <ExpenseForm
-                initialExpense={editingExpense || {}}
-                onSubmit={handleAddExpense}
-                onCancel={() => {
-                  setShowExpenseForm(false);
-                  setEditingExpense(null);
-                }}
-              />
-            </div>
-          </div>
-        </div>
+        <ExpenseModal
+          isOpen={showExpenseForm}
+          onClose={() => {
+            setShowExpenseForm(false);
+            setEditingExpense(null);
+          }}
+          initialExpense={editingExpense || {}}
+          onSubmit={handleAddExpense}
+        />
       )}
     </div>
   );

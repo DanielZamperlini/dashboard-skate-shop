@@ -7,7 +7,7 @@ import { X, Plus } from 'lucide-react';
 
 interface SaleFormProps {
   initialSale?: Partial<Sale>;
-  onSubmit: (sale: Partial<Sale>) => void;
+  onSubmit: (sale: Omit<Sale, 'id'>) => void;
   onCancel: () => void;
 }
 
@@ -165,13 +165,17 @@ const SaleForm: React.FC<SaleFormProps> = ({
 
     if (!validate()) return;
 
-    const finalSale = {
-      ...(sale as Partial<Sale>),
+    const finalSale: Omit<Sale, 'id'> = {
+      customerId: sale.customerId || '',
+      customerName: sale.customerName || '',
       items: sale.items || [],
       total: sale.total || 0,
+      paid: paymentType === 'full',
+      paymentMethod: sale.paymentMethod || '',
+      notes: sale.notes || '',
       createdAt: initialSale.createdAt || new Date(),
       paymentDate: sale.paid ? new Date() : undefined,
-      paid: paymentType === 'full' ? true : sale.paid,
+      partialPayment: sale.partialPayment || [],
       remainingAmount:
         paymentType === 'full' ? 0 : sale.remainingAmount || sale.total || 0,
     };

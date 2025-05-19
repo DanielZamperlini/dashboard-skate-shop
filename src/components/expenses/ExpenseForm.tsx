@@ -19,7 +19,7 @@ const categoryOptions = [
   'Materiais de Escritório',
   'Taxas e Impostos',
   'Viagens e Transportes',
-  'Outros Gastos'
+  'Outros Gastos',
 ];
 
 const paymentMethodOptions = [
@@ -29,7 +29,7 @@ const paymentMethodOptions = [
   'Cartão de Débito',
   'Transferência Bancária',
   'Boleto',
-  'Outro'
+  'Outro',
 ];
 
 const ExpenseForm: React.FC<ExpenseFormProps> = ({
@@ -48,7 +48,9 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
   });
 
   const [amountInput, setAmountInput] = useState<string>(
-    initialExpense.amount ? (initialExpense.amount / 100).toFixed(2).replace('.', ',') : ''
+    initialExpense.amount
+      ? (initialExpense.amount / 100).toFixed(2).replace('.', ',')
+      : '',
   );
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -56,13 +58,17 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value;
     value = value.replace(/[^\d,]/g, '');
-    
+
     const commaCount = value.split(',').length - 1;
     if (commaCount > 1) {
       value = value.replace(/,+$/, '');
     }
-    
+
     setAmountInput(value);
+  };
+
+  const handleAmountFocus = () => {
+    setAmountInput('');
   };
 
   const handleAmountBlur = () => {
@@ -72,45 +78,50 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
     }
 
     let value = amountInput;
-    
+
     if (value.includes(',')) {
       const parts = value.split(',');
       const integerPart = parts[0].replace(/\D/g, '') || '0';
-      const decimalPart = (parts[1] || '').replace(/\D/g, '').substring(0, 2).padEnd(2, '0');
+      const decimalPart = (parts[1] || '')
+        .replace(/\D/g, '')
+        .substring(0, 2)
+        .padEnd(2, '0');
       value = `${integerPart},${decimalPart}`;
     } else {
       const numericValue = value.replace(/\D/g, '');
       value = `${numericValue || '0'},00`;
     }
-    
+
     setAmountInput(value);
-    
+
     const numericValue = parseFloat(value.replace(',', '.')) || 0;
-    setExpense(prev => ({
+    setExpense((prev) => ({
       ...prev,
-      amount: numericValue
+      amount: numericValue,
     }));
   };
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
   ) => {
     const { name, value } = e.target;
-    
+
     if (name === 'amount') return;
-    
-    let parsedValue: any = value;
+
+    let parsedValue: string | Date = value;
     if (name === 'date') {
       parsedValue = new Date(value);
     }
-    
-    setExpense(prev => ({
+
+    setExpense((prev) => ({
       ...prev,
       [name]: parsedValue,
     }));
-    
+
     if (errors[name]) {
-      setErrors(prev => {
+      setErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors[name];
         return newErrors;
@@ -149,11 +160,11 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validate()) return;
-    
+
     onSubmit({
-      ...expense as Omit<Expense, 'id'>,
+      ...(expense as Omit<Expense, 'id'>),
       date: expense.date || new Date(),
     });
   };
@@ -174,7 +185,10 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+          <label
+            htmlFor="description"
+            className="block text-sm font-medium text-gray-700"
+          >
             Descrição da Despesa*
           </label>
           <input
@@ -188,11 +202,16 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
               errors.description ? 'border-red-500' : 'border-gray-300'
             } shadow-sm p-2 focus:border-blue-500 focus:ring-blue-500`}
           />
-          {errors.description && <p className="mt-1 text-sm text-red-600">{errors.description}</p>}
+          {errors.description && (
+            <p className="mt-1 text-sm text-red-600">{errors.description}</p>
+          )}
         </div>
 
         <div>
-          <label htmlFor="category" className="block text-sm font-medium text-gray-700">
+          <label
+            htmlFor="category"
+            className="block text-sm font-medium text-gray-700"
+          >
             Categoria*
           </label>
           <select
@@ -213,7 +232,10 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <label htmlFor="amount" className="block text-sm font-medium text-gray-700">
+          <label
+            htmlFor="amount"
+            className="block text-sm font-medium text-gray-700"
+          >
             Valor (R$)*
           </label>
           <div className="mt-1 relative rounded-md shadow-sm">
@@ -226,6 +248,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
               name="amount"
               value={amountInput}
               onChange={handleAmountChange}
+              onFocus={handleAmountFocus}
               onBlur={handleAmountBlur}
               placeholder="0,00"
               className={`block w-full pl-7 rounded-md border ${
@@ -233,11 +256,16 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
               } p-2 focus:border-blue-500 focus:ring-blue-500`}
             />
           </div>
-          {errors.amount && <p className="mt-1 text-sm text-red-600">{errors.amount}</p>}
+          {errors.amount && (
+            <p className="mt-1 text-sm text-red-600">{errors.amount}</p>
+          )}
         </div>
 
         <div>
-          <label htmlFor="date" className="block text-sm font-medium text-gray-700">
+          <label
+            htmlFor="date"
+            className="block text-sm font-medium text-gray-700"
+          >
             Data*
           </label>
           <input
@@ -251,11 +279,16 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
               errors.date ? 'border-red-500' : 'border-gray-300'
             } shadow-sm p-2 focus:border-blue-500 focus:ring-blue-500`}
           />
-          {errors.date && <p className="mt-1 text-sm text-red-600">{errors.date}</p>}
+          {errors.date && (
+            <p className="mt-1 text-sm text-red-600">{errors.date}</p>
+          )}
         </div>
 
         <div>
-          <label htmlFor="paymentMethod" className="block text-sm font-medium text-gray-700">
+          <label
+            htmlFor="paymentMethod"
+            className="block text-sm font-medium text-gray-700"
+          >
             Forma de Pagamento*
           </label>
           <select
@@ -273,12 +306,17 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
               </option>
             ))}
           </select>
-          {errors.paymentMethod && <p className="mt-1 text-sm text-red-600">{errors.paymentMethod}</p>}
+          {errors.paymentMethod && (
+            <p className="mt-1 text-sm text-red-600">{errors.paymentMethod}</p>
+          )}
         </div>
       </div>
 
       <div>
-        <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
+        <label
+          htmlFor="notes"
+          className="block text-sm font-medium text-gray-700"
+        >
           Detalhes Adicionais
         </label>
         <textarea

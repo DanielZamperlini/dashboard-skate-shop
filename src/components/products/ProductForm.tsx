@@ -19,7 +19,7 @@ const categoryOptions: ProductCategory[] = [
   'Acessórios',
   'Roupas',
   'Tênis',
-  'Outros'
+  'Outros',
 ];
 
 const ProductForm: React.FC<ProductFormProps> = ({
@@ -40,24 +40,31 @@ const ProductForm: React.FC<ProductFormProps> = ({
   });
 
   const [priceInput, setPriceInput] = useState<string>(
-    initialProduct.price ? initialProduct.price.toFixed(2).replace('.', ',') : ''
+    initialProduct.price
+      ? initialProduct.price.toFixed(2).replace('.', ',')
+      : '',
   );
 
   const [costPriceInput, setCostPriceInput] = useState<string>(
-    initialProduct.costPrice ? initialProduct.costPrice.toFixed(2).replace('.', ',') : ''
+    initialProduct.costPrice
+      ? initialProduct.costPrice.toFixed(2).replace('.', ',')
+      : '',
   );
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'price' | 'costPrice') => {
+  const handlePriceChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    field: 'price' | 'costPrice',
+  ) => {
     let value = e.target.value;
     value = value.replace(/[^\d,]/g, '');
-    
+
     const commaCount = value.split(',').length - 1;
     if (commaCount > 1) {
       value = value.replace(/,+$/, '');
     }
-    
+
     if (field === 'price') {
       setPriceInput(value);
     } else {
@@ -65,9 +72,17 @@ const ProductForm: React.FC<ProductFormProps> = ({
     }
   };
 
+  const handlePriceFocus = (field: 'price' | 'costPrice') => {
+    if (field === 'price') {
+      setPriceInput('');
+    } else {
+      setCostPriceInput('');
+    }
+  };
+
   const handlePriceBlur = (field: 'price' | 'costPrice') => {
     const input = field === 'price' ? priceInput : costPriceInput;
-    
+
     if (!input) {
       if (field === 'price') {
         setPriceInput('0,00');
@@ -78,49 +93,66 @@ const ProductForm: React.FC<ProductFormProps> = ({
     }
 
     let value = input;
-    
+
     if (value.includes(',')) {
       const parts = value.split(',');
       const integerPart = parts[0].replace(/\D/g, '') || '0';
-      const decimalPart = (parts[1] || '').replace(/\D/g, '').substring(0, 2).padEnd(2, '0');
+      const decimalPart = (parts[1] || '')
+        .replace(/\D/g, '')
+        .substring(0, 2)
+        .padEnd(2, '0');
       value = `${integerPart},${decimalPart}`;
     } else {
       const numericValue = value.replace(/\D/g, '');
       value = `${numericValue || '0'},00`;
     }
-    
+
     if (field === 'price') {
       setPriceInput(value);
     } else {
       setCostPriceInput(value);
     }
-    
+
     const numericValue = parseFloat(value.replace(',', '.')) || 0;
-    setProduct(prev => ({
+    setProduct((prev) => ({
       ...prev,
-      [field]: numericValue
+      [field]: numericValue,
     }));
   };
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
   ) => {
     const { name, value } = e.target;
-    
-    if (name === 'price' || name === 'costPrice') return;
-    
-    let parsedValue: any = value;
-    if (name === 'quantity' || name === 'minStock') {
-      parsedValue = parseInt(value) || 0;
+
+    if (
+      name === 'price' ||
+      name === 'costPrice' ||
+      name === 'quantity' ||
+      name === 'minStock'
+    ) {
+      return;
     }
-    
-    setProduct(prev => ({
+
+    let parsedValue: string | number = value;
+    if (
+      name === 'price' ||
+      name === 'costPrice' ||
+      name === 'quantity' ||
+      name === 'minStock'
+    ) {
+      parsedValue = Number(value);
+    }
+
+    setProduct((prev) => ({
       ...prev,
       [name]: parsedValue,
     }));
-    
+
     if (errors[name]) {
-      setErrors(prev => {
+      setErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors[name];
         return newErrors;
@@ -140,19 +172,17 @@ const ProductForm: React.FC<ProductFormProps> = ({
     }
 
     if (!product.price || product.price <= 0) {
-      newErrors.price = 'Preço de venda deve ser maior que zero';
+      newErrors.price = 'O preço de venda deve ser maior que zero';
+    } else if (product.costPrice && product.costPrice >= product.price) {
+      newErrors.price = 'Preço de venda deve ser maior que o preço de custo';
     }
 
-    if (!product.costPrice || product.costPrice <= 0) {
-      newErrors.costPrice = 'Preço de custo deve ser maior que zero';
+    if (!product.costPrice || product.costPrice < 0) {
+      newErrors.costPrice = 'O preço de custo deve ser maior ou igual a zero';
     }
 
     if (product.quantity === undefined || product.quantity < 0) {
       newErrors.quantity = 'Quantidade em estoque não pode ser negativa';
-    }
-
-    if (product.costPrice > product.price) {
-      newErrors.price = 'Preço de venda deve ser maior que o preço de custo';
     }
 
     setErrors(newErrors);
@@ -161,11 +191,11 @@ const ProductForm: React.FC<ProductFormProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validate()) return;
-    
+
     onSubmit({
-      ...product as Omit<Product, 'id'>,
+      ...(product as Omit<Product, 'id'>),
       createdAt: initialProduct.createdAt || new Date(),
       updatedAt: new Date(),
     });
@@ -175,7 +205,10 @@ const ProductForm: React.FC<ProductFormProps> = ({
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+          <label
+            htmlFor="name"
+            className="block text-sm font-medium text-gray-700"
+          >
             Nome do Produto*
           </label>
           <input
@@ -189,11 +222,16 @@ const ProductForm: React.FC<ProductFormProps> = ({
               errors.name ? 'border-red-500' : 'border-gray-300'
             } shadow-sm p-2 focus:border-blue-500 focus:ring-blue-500`}
           />
-          {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
+          {errors.name && (
+            <p className="mt-1 text-sm text-red-600">{errors.name}</p>
+          )}
         </div>
 
         <div>
-          <label htmlFor="category" className="block text-sm font-medium text-gray-700">
+          <label
+            htmlFor="category"
+            className="block text-sm font-medium text-gray-700"
+          >
             Categoria*
           </label>
           <select
@@ -213,7 +251,10 @@ const ProductForm: React.FC<ProductFormProps> = ({
       </div>
 
       <div>
-        <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+        <label
+          htmlFor="description"
+          className="block text-sm font-medium text-gray-700"
+        >
           Descrição Detalhada*
         </label>
         <textarea
@@ -227,12 +268,17 @@ const ProductForm: React.FC<ProductFormProps> = ({
             errors.description ? 'border-red-500' : 'border-gray-300'
           } shadow-sm p-2 focus:border-blue-500 focus:ring-blue-500`}
         />
-        {errors.description && <p className="mt-1 text-sm text-red-600">{errors.description}</p>}
+        {errors.description && (
+          <p className="mt-1 text-sm text-red-600">{errors.description}</p>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <label htmlFor="price" className="block text-sm font-medium text-gray-700">
+          <label
+            htmlFor="price"
+            className="block text-sm font-medium text-gray-700"
+          >
             Preço de Venda*
           </label>
           <div className="mt-1 relative rounded-md shadow-sm">
@@ -245,6 +291,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
               name="price"
               value={priceInput}
               onChange={(e) => handlePriceChange(e, 'price')}
+              onFocus={() => handlePriceFocus('price')}
               onBlur={() => handlePriceBlur('price')}
               placeholder="0,00"
               className={`block w-full pl-7 rounded-md border ${
@@ -252,11 +299,16 @@ const ProductForm: React.FC<ProductFormProps> = ({
               } p-2 focus:border-blue-500 focus:ring-blue-500`}
             />
           </div>
-          {errors.price && <p className="mt-1 text-sm text-red-600">{errors.price}</p>}
+          {errors.price && (
+            <p className="mt-1 text-sm text-red-600">{errors.price}</p>
+          )}
         </div>
 
         <div>
-          <label htmlFor="costPrice" className="block text-sm font-medium text-gray-700">
+          <label
+            htmlFor="costPrice"
+            className="block text-sm font-medium text-gray-700"
+          >
             Preço de Custo*
           </label>
           <div className="mt-1 relative rounded-md shadow-sm">
@@ -269,6 +321,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
               name="costPrice"
               value={costPriceInput}
               onChange={(e) => handlePriceChange(e, 'costPrice')}
+              onFocus={() => handlePriceFocus('costPrice')}
               onBlur={() => handlePriceBlur('costPrice')}
               placeholder="0,00"
               className={`block w-full pl-7 rounded-md border ${
@@ -276,11 +329,16 @@ const ProductForm: React.FC<ProductFormProps> = ({
               } p-2 focus:border-blue-500 focus:ring-blue-500`}
             />
           </div>
-          {errors.costPrice && <p className="mt-1 text-sm text-red-600">{errors.costPrice}</p>}
+          {errors.costPrice && (
+            <p className="mt-1 text-sm text-red-600">{errors.costPrice}</p>
+          )}
         </div>
 
         <div>
-          <label htmlFor="quantity" className="block text-sm font-medium text-gray-700">
+          <label
+            htmlFor="quantity"
+            className="block text-sm font-medium text-gray-700"
+          >
             Quantidade em Estoque*
           </label>
           <input
@@ -294,13 +352,18 @@ const ProductForm: React.FC<ProductFormProps> = ({
               errors.quantity ? 'border-red-500' : 'border-gray-300'
             } shadow-sm p-2 focus:border-blue-500 focus:ring-blue-500`}
           />
-          {errors.quantity && <p className="mt-1 text-sm text-red-600">{errors.quantity}</p>}
+          {errors.quantity && (
+            <p className="mt-1 text-sm text-red-600">{errors.quantity}</p>
+          )}
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label htmlFor="minStock" className="block text-sm font-medium text-gray-700">
+          <label
+            htmlFor="minStock"
+            className="block text-sm font-medium text-gray-700"
+          >
             Estoque Mínimo (Alerta)
           </label>
           <input
@@ -315,7 +378,10 @@ const ProductForm: React.FC<ProductFormProps> = ({
         </div>
 
         <div>
-          <label htmlFor="imageUrl" className="block text-sm font-medium text-gray-700">
+          <label
+            htmlFor="imageUrl"
+            className="block text-sm font-medium text-gray-700"
+          >
             URL da Imagem (Link)
           </label>
           <input
