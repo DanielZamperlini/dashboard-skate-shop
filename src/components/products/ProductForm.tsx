@@ -127,22 +127,12 @@ const ProductForm: React.FC<ProductFormProps> = ({
   ) => {
     const { name, value } = e.target;
 
-    if (
-      name === 'price' ||
-      name === 'costPrice' ||
-      name === 'quantity' ||
-      name === 'minStock'
-    ) {
+    if (name === 'price' || name === 'costPrice') {
       return;
     }
 
     let parsedValue: string | number = value;
-    if (
-      name === 'price' ||
-      name === 'costPrice' ||
-      name === 'quantity' ||
-      name === 'minStock'
-    ) {
+    if (name === 'quantity' || name === 'minStock') {
       parsedValue = Number(value);
     }
 
