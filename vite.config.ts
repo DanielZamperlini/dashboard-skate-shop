@@ -7,4 +7,12 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['lucide-react'],
   },
+  build: {
+    target: 'chrome88',
+    rollupOptions: {
+      output: {
+        format: 'es',
+      },
+    },
+  },
 });
