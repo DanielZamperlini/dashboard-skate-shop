@@ -59,6 +59,7 @@ export interface Sale {
     method: string;
   }[];
   remainingAmount: number;
+  isCreditOnly?: boolean;
 }
 
 export interface Expense {
