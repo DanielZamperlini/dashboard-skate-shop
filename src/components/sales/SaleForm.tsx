@@ -30,6 +30,7 @@ const SaleForm: React.FC<SaleFormProps> = ({
     partialPayment: [],
     remainingAmount: 0,
     isCreditOnly: false,
+    discount: 0,
     ...initialSale,
   });
 
@@ -38,17 +39,20 @@ const SaleForm: React.FC<SaleFormProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [creditAmount, setCreditAmount] = useState<number>(0);
   const [creditAmountInput, setCreditAmountInput] = useState<string>('');
+  const [discountInput, setDiscountInput] = useState<string>('0,00');
 
   const [paymentType, setPaymentType] = useState<'full' | 'partial'>('full');
   const [partialAmount, setPartialAmount] = useState<number>(0);
 
   useEffect(() => {
-    const total = (sale.items || []).reduce(
+    const subtotal = (sale.items || []).reduce(
       (sum, item) => sum + item.subtotal,
       0,
     );
+    const discount = sale.discount || 0;
+    const total = Math.max(0, subtotal - discount);
     setSale((prev) => ({ ...prev, total }));
-  }, [sale.items]);
+  }, [sale.items, sale.discount]);
 
   useEffect(() => {
     if (initialSale.isCreditOnly) {
@@ -307,8 +311,53 @@ const SaleForm: React.FC<SaleFormProps> = ({
     setPartialAmount(0);
   };
 
+  const handleDiscountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value;
+    value = value.replace(/[^\d,]/g, '');
+
+    const commaCount = value.split(',').length - 1;
+    if (commaCount > 1) {
+      value = value.replace(/,+$/, '');
+    }
+
+    setDiscountInput(value);
+  };
+
+  const handleDiscountBlur = () => {
+    if (!discountInput) {
+      setDiscountInput('0,00');
+      setSale((prev) => ({ ...prev, discount: 0 }));
+      return;
+    }
+
+    let value = discountInput;
+    value = value.replace(/[^\d,]/g, '');
+
+    const commaCount = value.split(',').length - 1;
+    if (commaCount > 1) {
+      value = value.replace(/,+$/, '');
+    }
+
+    if (value.includes(',')) {
+      const parts = value.split(',');
+      const integerPart = parts[0].replace(/\D/g, '') || '0';
+      const decimalPart = (parts[1] || '')
+        .replace(/\D/g, '')
+        .substring(0, 2)
+        .padEnd(2, '0');
+      value = `${integerPart},${decimalPart}`;
+    } else {
+      const numericValue = value.replace(/\D/g, '');
+      value = `${numericValue || '0'},00`;
+    }
+
+    setDiscountInput(value);
+    const numericValue = parseFloat(value.replace(',', '.')) || 0;
+    setSale((prev) => ({ ...prev, discount: numericValue }));
+  };
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-6">
       <div>
         <label
           htmlFor="customerId"
@@ -518,6 +567,51 @@ const SaleForm: React.FC<SaleFormProps> = ({
               )}
             </div>
           )}
+
+          <div className="mt-4 space-y-2">
+            <div className="flex justify-between items-center">
+              <span className="text-sm font-medium text-gray-700">
+                Subtotal:
+              </span>
+              <span className="text-sm text-gray-900">
+                {formatCurrency(
+                  (sale.items || []).reduce(
+                    (sum, item) => sum + item.subtotal,
+                    0,
+                  ),
+                )}
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center">
+              <label
+                htmlFor="discount"
+                className="text-sm font-medium text-gray-700"
+              >
+                Desconto:
+              </label>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="text"
+                  id="discount"
+                  value={discountInput}
+                  onChange={handleDiscountChange}
+                  onBlur={handleDiscountBlur}
+                  className="block w-32 rounded-md border border-gray-300 shadow-sm p-2 focus:border-blue-500 focus:ring-blue-500 text-right"
+                  placeholder="0,00"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+              <span className="text-base font-medium text-gray-900">
+                Total:
+              </span>
+              <span className="text-lg font-bold text-gray-900">
+                {formatCurrency(sale.total || 0)}
+              </span>
+            </div>
+          </div>
         </div>
       )}
 

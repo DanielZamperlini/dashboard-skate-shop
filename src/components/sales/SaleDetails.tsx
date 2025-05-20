@@ -66,6 +66,27 @@ const SaleDetails: React.FC<SaleDetailsProps> = ({ sale, onClose, onEdit }) => {
                 <span>{formatCurrency(item.subtotal)}</span>
               </div>
             ))}
+
+            <div className="pt-2 border-t border-gray-200">
+              <div className="flex justify-between text-sm">
+                <span>Subtotal:</span>
+                <span>
+                  {formatCurrency(
+                    sale.items.reduce((sum, item) => sum + item.subtotal, 0),
+                  )}
+                </span>
+              </div>
+              {sale.discount && sale.discount > 0 && (
+                <div className="flex justify-between text-sm text-red-600">
+                  <span>Desconto:</span>
+                  <span>-{formatCurrency(sale.discount)}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-base font-medium mt-2">
+                <span>Total:</span>
+                <span>{formatCurrency(sale.total)}</span>
+              </div>
+            </div>
           </div>
         </div>
       )}

@@ -60,6 +60,7 @@ export interface Sale {
   }[];
   remainingAmount: number;
   isCreditOnly?: boolean;
+  discount?: number;
 }
 
 export interface Expense {
