@@ -252,7 +252,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
       if (sale.paid) {
         return total + sale.total;
       }
-      return total;
+      // Para vendas com pagamento parcial, soma o valor total menos o valor pendente
+      return total + (sale.total - (sale.remainingAmount || 0));
     }, 0);
   };
 
@@ -261,7 +262,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   const getPendingSales = async () => {
-    return SaleRepository.findPending();
+    const allSales = await SaleRepository.findAll();
+    return allSales.filter((sale) => !sale.paid && sale.remainingAmount > 0);
   };
 
   const getLowStockProducts = async (threshold = 5) => {

@@ -57,6 +57,7 @@ const Sales: React.FC = () => {
         sales={sales}
         onEdit={handleEditClick}
         onDelete={handleDeleteClick}
+        onUpdate={updateSale}
       />
 
       {/* Add/Edit Sale Modal */}

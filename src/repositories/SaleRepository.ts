@@ -8,6 +8,7 @@ export class SaleRepository {
       id: uuidv4(),
       ...sale,
       createdAt: new Date(),
+      discount: sale.discount || 0,
     };
 
     await db.add('sales', newSale);
@@ -15,8 +16,12 @@ export class SaleRepository {
   }
 
   async update(sale: Sale): Promise<Sale> {
-    await db.put('sales', sale);
-    return sale;
+    const updatedSale = {
+      ...sale,
+      discount: sale.discount || 0,
+    };
+    await db.put('sales', updatedSale);
+    return updatedSale;
   }
 
   async delete(id: string): Promise<void> {

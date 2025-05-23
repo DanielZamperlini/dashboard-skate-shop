@@ -9,9 +9,15 @@ interface SaleListProps {
   sales: Sale[];
   onEdit: (sale: Sale) => void;
   onDelete: (id: string) => void;
+  onUpdate: (sale: Sale) => void;
 }
 
-const SaleList: React.FC<SaleListProps> = ({ sales, onEdit, onDelete }) => {
+const SaleList: React.FC<SaleListProps> = ({
+  sales,
+  onEdit,
+  onDelete,
+  onUpdate,
+}) => {
   const [viewingSale, setViewingSale] = useState<Sale | null>(null);
 
   return (
@@ -103,6 +109,10 @@ const SaleList: React.FC<SaleListProps> = ({ sales, onEdit, onDelete }) => {
             sale={viewingSale}
             onClose={() => setViewingSale(null)}
             onEdit={onEdit}
+            onUpdate={(updatedSale) => {
+              onUpdate(updatedSale);
+              setViewingSale(updatedSale);
+            }}
           />
         </Modal>
       )}

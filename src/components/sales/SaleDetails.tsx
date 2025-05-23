@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Sale } from '../../types';
 import Button from '../ui/Button';
 import { CheckCircle, AlertCircle } from 'lucide-react';
@@ -8,15 +8,103 @@ interface SaleDetailsProps {
   sale: Sale;
   onClose: () => void;
   onEdit: (sale: Sale) => void;
+  onUpdate: (sale: Sale) => void;
 }
 
-const SaleDetails: React.FC<SaleDetailsProps> = ({ sale, onClose, onEdit }) => {
+const SaleDetails: React.FC<SaleDetailsProps> = ({
+  sale,
+  onClose,
+  onEdit,
+  onUpdate,
+}) => {
+  const [partialAmount, setPartialAmount] = useState<number>(0);
+  const [partialAmountInput, setPartialAmountInput] = useState<string>('');
+  const [paymentMethod, setPaymentMethod] = useState<string>('');
+
+  const handlePartialAmountFocus = () => {
+    setPartialAmountInput('');
+  };
+
+  const handlePartialAmountBlur = () => {
+    if (!partialAmountInput) {
+      setPartialAmountInput('0,00');
+      setPartialAmount(0);
+      return;
+    }
+
+    let value = partialAmountInput;
+    value = value.replace(/[^\d,]/g, '');
+
+    const commaCount = value.split(',').length - 1;
+    if (commaCount > 1) {
+      value = value.replace(/,+$/, '');
+    }
+
+    if (value.includes(',')) {
+      const parts = value.split(',');
+      const integerPart = parts[0].replace(/\D/g, '') || '0';
+      const decimalPart = (parts[1] || '')
+        .replace(/\D/g, '')
+        .substring(0, 2)
+        .padEnd(2, '0');
+      value = `${integerPart},${decimalPart}`;
+    } else {
+      const numericValue = value.replace(/\D/g, '');
+      value = `${numericValue || '0'},00`;
+    }
+
+    setPartialAmountInput(value);
+    const numericValue = parseFloat(value.replace(',', '.')) || 0;
+    setPartialAmount(numericValue);
+  };
+
+  const handlePartialAmountChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    let value = e.target.value;
+    value = value.replace(/[^\d,]/g, '');
+
+    const commaCount = value.split(',').length - 1;
+    if (commaCount > 1) {
+      value = value.replace(/,+$/, '');
+    }
+
+    setPartialAmountInput(value);
+  };
+
+  const handlePartialPayment = () => {
+    if (!partialAmount || partialAmount <= 0 || !paymentMethod) return;
+
+    const newPayment = {
+      amount: partialAmount,
+      date: new Date(),
+      method: paymentMethod,
+    };
+
+    const remaining = sale.remainingAmount - partialAmount;
+    const isFullyPaid = remaining <= 0;
+
+    const updatedSale: Sale = {
+      ...sale,
+      partialPayment: [...(sale.partialPayment || []), newPayment],
+      remainingAmount: Math.max(0, remaining),
+      paid: isFullyPaid,
+      paymentDate: isFullyPaid ? new Date() : undefined,
+      paymentMethod: paymentMethod,
+    };
+
+    onUpdate(updatedSale);
+    setPartialAmount(0);
+    setPartialAmountInput('');
+    setPaymentMethod('');
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-start">
         <div>
           <h2 className="text-lg font-medium text-gray-900">
-            {sale.isCreditOnly ? 'Venda Fiada' : 'Detalhes da Venda'}
+            {sale.isCreditOnly ? 'Venda Avulsa' : 'Detalhes da Venda'}
           </h2>
           <p className="text-sm text-gray-500">Cliente: {sale.customerName}</p>
           <p className="text-sm text-gray-500">
@@ -76,12 +164,10 @@ const SaleDetails: React.FC<SaleDetailsProps> = ({ sale, onClose, onEdit }) => {
                   )}
                 </span>
               </div>
-              {sale.discount && sale.discount > 0 && (
-                <div className="flex justify-between text-sm text-red-600">
-                  <span>Desconto:</span>
-                  <span>-{formatCurrency(sale.discount)}</span>
-                </div>
-              )}
+              <div className="flex justify-between text-sm text-red-600">
+                <span>Desconto:</span>
+                <span>-{formatCurrency(sale.discount || 0)}</span>
+              </div>
               <div className="flex justify-between text-base font-medium mt-2">
                 <span>Total:</span>
                 <span>{formatCurrency(sale.total)}</span>
@@ -99,6 +185,55 @@ const SaleDetails: React.FC<SaleDetailsProps> = ({ sale, onClose, onEdit }) => {
           <p className="text-lg font-medium text-yellow-900">
             {formatCurrency(sale.remainingAmount)}
           </p>
+
+          <div className="mt-4 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Valor do Pagamento
+              </label>
+              <input
+                type="text"
+                value={partialAmountInput}
+                onChange={handlePartialAmountChange}
+                onFocus={handlePartialAmountFocus}
+                onBlur={handlePartialAmountBlur}
+                min="0"
+                max={sale.remainingAmount}
+                step="0.01"
+                className="block w-full rounded-md border border-gray-300 shadow-sm p-2 focus:border-blue-500 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Forma de Pagamento
+              </label>
+              <select
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+                className="block w-full rounded-md border border-gray-300 shadow-sm p-2 focus:border-blue-500 focus:ring-blue-500"
+              >
+                <option value="">Selecione...</option>
+                <option value="Dinheiro">Dinheiro</option>
+                <option value="Cartão de Crédito">Cartão de Crédito</option>
+                <option value="Cartão de Débito">Cartão de Débito</option>
+                <option value="PIX">PIX</option>
+                <option value="Transferência Bancária">
+                  Transferência Bancária
+                </option>
+                <option value="Boleto">Boleto</option>
+                <option value="Outro">Outro</option>
+              </select>
+            </div>
+
+            <Button
+              onClick={handlePartialPayment}
+              disabled={!partialAmount || !paymentMethod}
+              className="w-full"
+            >
+              Registrar Pagamento
+            </Button>
+          </div>
         </div>
       )}
 

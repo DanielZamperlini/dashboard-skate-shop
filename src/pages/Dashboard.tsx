@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import StatCard from '../components/ui/StatCard';
 import {
@@ -15,7 +15,7 @@ import {
 import ExpenseModal from '../components/expenses/ExpenseModal';
 import Button from '../components/ui/Button';
 import { Link } from 'react-router-dom';
-import { Sale, Expense } from '../types';
+import { Expense } from '../types';
 
 const Dashboard: React.FC = () => {
   const { state, getTotalExpenses, addExpense, updateExpense, deleteExpense } =
@@ -24,15 +24,6 @@ const Dashboard: React.FC = () => {
   const [showExpenseForm, setShowExpenseForm] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [showAllExpenses, setShowAllExpenses] = useState(false);
-  const [pendingSales, setPendingSales] = useState<Sale[]>([]);
-
-  useEffect(() => {
-    const pending = state.sales.filter(
-      (sale) =>
-        !sale.paid || (sale.remainingAmount && sale.remainingAmount > 0),
-    );
-    setPendingSales(pending);
-  }, [state.sales]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -45,15 +36,18 @@ const Dashboard: React.FC = () => {
 
   const totalExpenses = getTotalExpenses();
   const totalSales = state.sales.reduce((sum, sale) => sum + sale.total, 0);
-  const pendingAmount = pendingSales.reduce((sum, sale) => {
+  const paidSales = state.sales.reduce((sum, sale) => {
     if (sale.paid) {
-      return sum + (sale.remainingAmount || 0);
+      return sum + sale.total;
     }
-    return sum + (sale.remainingAmount || sale.total);
+    return sum + (sale.total - sale.remainingAmount);
+  }, 0);
+  const pendingAmount = state.sales.reduce((sum, sale) => {
+    return sum + (sale.remainingAmount || 0);
   }, 0);
 
-  // Calcula o saldo real (vendas totais - pendentes - despesas)
-  const realBalance = totalSales - pendingAmount - totalExpenses;
+  // Calcula o saldo real (vendas pagas - despesas)
+  const realBalance = paidSales - totalExpenses;
 
   const handleAddExpense = (expense: Omit<Expense, 'id'>) => {
     if (editingExpense) {

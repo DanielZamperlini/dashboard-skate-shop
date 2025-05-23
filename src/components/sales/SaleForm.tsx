@@ -23,26 +23,33 @@ const SaleForm: React.FC<SaleFormProps> = ({
     customerName: '',
     customerId: '',
     items: [],
-    total: 0,
+    total: initialSale.total || 0,
     paid: false,
     paymentMethod: '',
     notes: '',
     partialPayment: [],
-    remainingAmount: 0,
+    remainingAmount: initialSale.remainingAmount || 0,
     isCreditOnly: false,
-    discount: 0,
+    discount: initialSale.discount || 0,
     ...initialSale,
   });
 
   const [selectedProductId, setSelectedProductId] = useState<string>('');
   const [quantity, setQuantity] = useState<number>(1);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [creditAmount, setCreditAmount] = useState<number>(0);
-  const [creditAmountInput, setCreditAmountInput] = useState<string>('');
-  const [discountInput, setDiscountInput] = useState<string>('0,00');
+  const [creditAmount, setCreditAmount] = useState<number>(
+    initialSale.total || 0,
+  );
+  const [creditAmountInput, setCreditAmountInput] = useState<string>(
+    initialSale.total?.toFixed(2).replace('.', ',') || '',
+  );
+  const [discountInput, setDiscountInput] = useState<string>(
+    initialSale.discount?.toFixed(2).replace('.', ',') || '0,00',
+  );
 
   const [paymentType, setPaymentType] = useState<'full' | 'partial'>('full');
   const [partialAmount, setPartialAmount] = useState<number>(0);
+  const [partialAmountInput, setPartialAmountInput] = useState<string>('');
 
   useEffect(() => {
     const subtotal = (sale.items || []).reduce(
@@ -247,9 +254,13 @@ const SaleForm: React.FC<SaleFormProps> = ({
       remainingAmount:
         paymentType === 'full'
           ? 0
-          : sale.remainingAmount ||
-            (sale.isCreditOnly ? creditAmount : sale.total || 0),
+          : sale.isCreditOnly
+          ? creditAmount -
+            (sale.partialPayment?.reduce((sum, p) => sum + p.amount, 0) || 0)
+          : (sale.total || 0) -
+            (sale.partialPayment?.reduce((sum, p) => sum + p.amount, 0) || 0),
       isCreditOnly: sale.isCreditOnly,
+      discount: sale.discount || 0,
     };
 
     onSubmit(finalSale);
@@ -306,9 +317,12 @@ const SaleForm: React.FC<SaleFormProps> = ({
       remainingAmount: Math.max(0, remaining),
       paid: isFullyPaid,
       paymentDate: isFullyPaid ? new Date() : undefined,
+      total: prev.total || 0,
     }));
 
     setPartialAmount(0);
+    setPartialAmountInput('');
+    setSale((prev) => ({ ...prev, paymentMethod: '' }));
   };
 
   const handleDiscountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -356,6 +370,57 @@ const SaleForm: React.FC<SaleFormProps> = ({
     setSale((prev) => ({ ...prev, discount: numericValue }));
   };
 
+  const handlePartialAmountFocus = () => {
+    setPartialAmountInput('');
+  };
+
+  const handlePartialAmountBlur = () => {
+    if (!partialAmountInput) {
+      setPartialAmountInput('0,00');
+      setPartialAmount(0);
+      return;
+    }
+
+    let value = partialAmountInput;
+    value = value.replace(/[^\d,]/g, '');
+
+    const commaCount = value.split(',').length - 1;
+    if (commaCount > 1) {
+      value = value.replace(/,+$/, '');
+    }
+
+    if (value.includes(',')) {
+      const parts = value.split(',');
+      const integerPart = parts[0].replace(/\D/g, '') || '0';
+      const decimalPart = (parts[1] || '')
+        .replace(/\D/g, '')
+        .substring(0, 2)
+        .padEnd(2, '0');
+      value = `${integerPart},${decimalPart}`;
+    } else {
+      const numericValue = value.replace(/\D/g, '');
+      value = `${numericValue || '0'},00`;
+    }
+
+    setPartialAmountInput(value);
+    const numericValue = parseFloat(value.replace(',', '.')) || 0;
+    setPartialAmount(numericValue);
+  };
+
+  const handlePartialAmountChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    let value = e.target.value;
+    value = value.replace(/[^\d,]/g, '');
+
+    const commaCount = value.split(',').length - 1;
+    if (commaCount > 1) {
+      value = value.replace(/,+$/, '');
+    }
+
+    setPartialAmountInput(value);
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
@@ -398,7 +463,7 @@ const SaleForm: React.FC<SaleFormProps> = ({
           htmlFor="isCreditOnly"
           className="text-sm font-medium text-gray-700"
         >
-          Venda Fiada (Sem Produto)
+          Venda Avulsa
         </label>
       </div>
 
@@ -698,10 +763,12 @@ const SaleForm: React.FC<SaleFormProps> = ({
                 Valor do Pagamento
               </label>
               <input
-                type="number"
+                type="text"
                 id="partialAmount"
-                value={partialAmount}
-                onChange={(e) => setPartialAmount(Number(e.target.value))}
+                value={partialAmountInput}
+                onChange={handlePartialAmountChange}
+                onFocus={handlePartialAmountFocus}
+                onBlur={handlePartialAmountBlur}
                 min="0"
                 max={sale.remainingAmount || sale.total || 0}
                 step="0.01"
